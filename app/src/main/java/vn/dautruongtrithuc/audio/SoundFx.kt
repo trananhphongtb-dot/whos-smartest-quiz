@@ -14,11 +14,37 @@ import vn.dautruongtrithuc.R
 import vn.dautruongtrithuc.data.Prefs
 import java.util.Locale
 
-/** Hiệu ứng âm thanh (tiếng đồng hồ, chuông…) và giọng đọc tiếng Việt. */
+/** Hiệu ứng âm thanh (tiếng đồng hồ, chuông…) và giọng đọc theo ngôn ngữ đã chọn. */
 class SoundFx(context: Context, private val prefs: Prefs) {
 
     private val app = context.applicationContext
-    private val vi = Locale("vi", "VN")
+
+    /** Giọng đọc theo mã ngôn ngữ; ngôn ngữ chưa có giọng riêng thì dùng tiếng Anh. */
+    fun localeFor(code: String): Locale = when (code) {
+        "vi" -> Locale("vi", "VN")
+        "zh" -> Locale.SIMPLIFIED_CHINESE
+        "hi" -> Locale("hi", "IN")
+        "es" -> Locale("es", "ES")
+        "fr" -> Locale("fr", "FR")
+        "de" -> Locale("de", "DE")
+        "pt" -> Locale("pt", "BR")
+        "ar" -> Locale("ar")
+        "ja" -> Locale("ja", "JP")
+        "ko" -> Locale("ko", "KR")
+        "ru" -> Locale("ru", "RU")
+        "it" -> Locale("it", "IT")
+        else -> Locale.ENGLISH
+    }
+
+    /** Đổi giọng đọc sang ngôn ngữ hiện tại (gọi khi đổi ngôn ngữ ở tab Tôi). */
+    fun applyVoiceLanguage() {
+        val t = tts ?: return
+        if (!ttsReady) return
+        val r = try { t.setLanguage(localeFor(prefs.language)) } catch (e: Exception) { TextToSpeech.LANG_NOT_SUPPORTED }
+        if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
+            try { t.setLanguage(Locale.ENGLISH) } catch (e: Exception) { }
+        }
+    }
 
     private val pool: SoundPool = SoundPool.Builder()
         .setMaxStreams(6)
@@ -80,17 +106,24 @@ class SoundFx(context: Context, private val prefs: Prefs) {
 
     private fun onEngineInit(t: TextToSpeech, status: Int, engine: String?) {
         if (status == TextToSpeech.SUCCESS) {
-            val r = try { t.setLanguage(vi) } catch (e: Exception) { TextToSpeech.LANG_NOT_SUPPORTED }
+            var r = try { t.setLanguage(localeFor(prefs.language)) } catch (e: Exception) { TextToSpeech.LANG_NOT_SUPPORTED }
+            if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
+                r = try { t.setLanguage(Locale.ENGLISH) } catch (e: Exception) { TextToSpeech.LANG_NOT_SUPPORTED }
+            }
             if (r != TextToSpeech.LANG_MISSING_DATA && r != TextToSpeech.LANG_NOT_SUPPORTED) {
                 t.setSpeechRate(0.95f)
                 ttsReady = true
                 voiceOk = true
                 checking = false
                 val name = t.defaultEngine ?: engine ?: ""
-                voiceStatus = if (name.contains("google")) "Giọng Google tiếng Việt · sẵn sàng" else "Giọng tiếng Việt · sẵn sàng"
+                voiceStatus = if (prefs.language == "vi") {
+                    if (name.contains("google")) "Giọng Google tiếng Việt · sẵn sàng" else "Giọng tiếng Việt · sẵn sàng"
+                } else {
+                    "Voice ready · ${localeFor(prefs.language).displayLanguage}"
+                }
                 return
             }
-            // Bộ đọc này không có tiếng Việt: tìm bộ khác
+            // Bộ đọc này không có giọng của ngôn ngữ đã chọn: tìm bộ khác
             val others = try { t.engines.map { it.name } } catch (e: Exception) { emptyList() }
             t.shutdown()
             pendingEngines = others.filter { it !in triedEngines }
@@ -116,7 +149,7 @@ class SoundFx(context: Context, private val prefs: Prefs) {
             tts = null
             voiceOk = false
             checking = false
-            voiceStatus = "Máy chưa có giọng tiếng Việt"
+            voiceStatus = if (prefs.language == "vi") "Máy chưa có giọng tiếng Việt" else "No voice available for ${localeFor(prefs.language).displayLanguage}"
         }
     }
 

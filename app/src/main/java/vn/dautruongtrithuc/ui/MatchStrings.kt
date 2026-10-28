@@ -78,6 +78,12 @@ data class MatchStrings(
     val congratsLabel: String = "CONGRATULATIONS",
     val youSuffix: String = " (you)",
     val pointsWord: String = "points",
+    // Spoken voice lines (MatchViewModel). Other languages fall back to English.
+    val voiceWelcome: String = "Welcome to the %s round",
+    val voiceFinishSolo: String = "Congratulations! You finished the match with %d points",
+    val voiceWinName: String = "Congratulations %s, you won!",
+    val voiceWin: String = "Congratulations, you won!",
+    val voiceGoodLuck: String = "Good luck next time!",
 )
 
 fun partNames(code: String): List<String> {
@@ -321,6 +327,7 @@ fun matchStrings(code: String): MatchStrings {
             newRoom = "新房间", newMatch = "新对战", replay = "再玩一次",
             winLabel = "胜利", congratsLabel = "恭喜！", youSuffix = "（你）",
             pointsWord = "分",
+            voiceWelcome = "欢迎来到%s环节", voiceFinishSolo = "恭喜！你以%d分完成了比赛", voiceWinName = "恭喜%s，你赢了！", voiceWin = "恭喜，你赢了！", voiceGoodLuck = "下次好运！",
         )
         "ja" -> base.copy(
             part1 = "ウォームアップ", part2 = "対決", part3 = "決勝",
@@ -477,6 +484,7 @@ fun matchStrings(code: String): MatchStrings {
             newRoom = "नया कमरा", newMatch = "नया मैच", replay = "फिर से खेलें",
             winLabel = "जीत", congratsLabel = "बधाई!", youSuffix = " (आप)",
             pointsWord = "अंक",
+            voiceWelcome = "%s राउंड में आपका स्वागत है", voiceFinishSolo = "बधाई! आपने %d अंकों के साथ मैच पूरा किया", voiceWinName = "बधाई %s, आप जीत गए!", voiceWin = "बधाई, आप जीत गए!", voiceGoodLuck = "अगली बार शुभकामनाएँ!",
         )
         "it" -> base.copy(
             part1 = "Riscaldamento", part2 = "Duello", part3 = "Finale",
@@ -555,6 +563,7 @@ fun matchStrings(code: String): MatchStrings {
             newRoom = "Phòng mới", newMatch = "Trận mới", replay = "Chơi lại",
             winLabel = "CHIẾN THẮNG", congratsLabel = "CHÚC MỪNG", youSuffix = " (bạn)",
             pointsWord = "điểm",
+            voiceWelcome = "Chào mừng đến với phần thi %s", voiceFinishSolo = "Xin chúc mừng! Bạn đã hoàn thành phần thi với %d điểm", voiceWinName = "Xin chúc mừng %s, bạn đã chiến thắng!", voiceWin = "Xin chúc mừng, bạn đã chiến thắng!", voiceGoodLuck = "Chúc bạn may mắn lần sau!",
         )
         else -> base
     }

@@ -46,6 +46,7 @@ import kotlin.random.Random
 
 @Composable
 fun ResultScreen(
+    ms: MatchStrings,
     players: List<PlayerState>,
     winners: Set<Int>,
     solo: Boolean,
@@ -69,7 +70,7 @@ fun ResultScreen(
         ) {
             Spacer(Modifier.height(10.dp))
             Text(
-                if (solo) "HOÀN THÀNH" else "KẾT QUẢ",
+                if (solo) ms.completedTitle else ms.resultTitle,
                 color = Gold,
                 fontSize = 40.sp,
                 fontWeight = FontWeight.Black,
@@ -77,13 +78,13 @@ fun ResultScreen(
             )
             if (solo && me != null) {
                 Spacer(Modifier.height(8.dp))
-                Text("Bạn đạt ${me.score} điểm", color = TextMain, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text(ms.youScored.replace("%d", "${me.score}"), color = TextMain, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(30.dp))
                 Avatar(me.name, me.palette, size = 96.dp, art = me.avatar, laurel = true, me = true)
                 Spacer(Modifier.height(30.dp))
             } else {
                 Spacer(Modifier.height(18.dp))
-                PodiumRow(players, winners, ranked, friends, onAddFriend)
+                PodiumRow(ms, players, winners, ranked, friends, onAddFriend)
             }
 
             Spacer(Modifier.height(18.dp))
@@ -91,9 +92,9 @@ fun ResultScreen(
                 when {
                     ranked && me != null -> {
                         val d = me.ratingDelta ?: 0
-                        "Điểm xếp hạng: ${me.rating} → ${me.rating + d} (+$d)"
+                        ms.ratingLabel + "${me.rating} → ${me.rating + d} (+$d)"
                     }
-                    else -> "Trận luyện tập không tính điểm xếp hạng."
+                    else -> ms.practiceNoRating
                 },
                 color = TextMain,
                 fontSize = 14.sp,
@@ -103,11 +104,11 @@ fun ResultScreen(
             Spacer(Modifier.height(20.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 BlueButton(modifier = Modifier.weight(1f).height(52.dp), onClick = onHome) {
-                    Text("Về sảnh", color = TextMain, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(ms.backToLobby, color = TextMain, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
                 GoldButton(modifier = Modifier.weight(1f).height(52.dp), onClick = onReplay) {
                     Text(
-                        if (room) "Phòng mới" else if (ranked) "Trận mới" else "Chơi lại",
+                        if (room) ms.newRoom else if (ranked) ms.newMatch else ms.replay,
                         color = Ink,
                         fontWeight = FontWeight.Black,
                         fontSize = 16.sp,
@@ -123,6 +124,7 @@ fun ResultScreen(
 /** Bục xếp hạng: nhì – nhất – ba – tư (chỉ hiện đúng số người). */
 @Composable
 private fun PodiumRow(
+    ms: MatchStrings,
     players: List<PlayerState>,
     winners: Set<Int>,
     ranked: Boolean,
@@ -149,7 +151,7 @@ private fun PodiumRow(
                 Modifier.width(if (win) 96.dp else 78.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Label(if (win) "CHIẾN THẮNG" else "CHÚC MỪNG", win)
+                Label(if (win) ms.winLabel else ms.congratsLabel, win)
                 Spacer(Modifier.height(if (win) 30.dp else 26.dp))
                 Avatar(
                     p.name, p.palette,
@@ -166,7 +168,7 @@ private fun PodiumRow(
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    if (p.id == 0) "${p.name} (bạn)" else p.name,
+                    if (p.id == 0) "${p.name}${ms.youSuffix}" else p.name,
                     color = TextMain,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -174,7 +176,7 @@ private fun PodiumRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    "${p.score} điểm" + (p.ratingDelta?.takeIf { ranked }?.let { " · +$it" } ?: ""),
+                    "${p.score} ${ms.pointsWord}" + (p.ratingDelta?.takeIf { ranked }?.let { " · +$it" } ?: ""),
                     color = TextMuted,
                     fontSize = 11.sp,
                     maxLines = 1,

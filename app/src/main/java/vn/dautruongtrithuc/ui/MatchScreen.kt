@@ -52,7 +52,6 @@ import vn.dautruongtrithuc.data.Net
 import vn.dautruongtrithuc.data.Prefs
 import vn.dautruongtrithuc.game.MatchConfig
 import vn.dautruongtrithuc.game.MatchViewModel
-import vn.dautruongtrithuc.game.PART_NAMES
 import vn.dautruongtrithuc.game.Phase
 
 val FIELD_NAMES = mapOf(
@@ -77,6 +76,7 @@ fun MatchScreen(
         onDispose { if (activity?.isChangingConfigurations != true) vm.stop() }
     }
 
+    val ms = matchStrings(prefs.language)
     var askExit by remember { mutableStateOf(false) }
     BackHandler(enabled = vm.phase != Phase.END) { askExit = true }
     val ctx = LocalContext.current
@@ -88,10 +88,10 @@ fun MatchScreen(
         if (pid != null && pid !in friends) {
             prefs.addFriend(pid)
             localFriends = prefs.friends().toSet()
-            android.widget.Toast.makeText(ctx, "Đã thêm ${p.name} vào bạn bè", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(ctx, uiStrings(prefs.language).addedFriend.replace("%s", p.name), android.widget.Toast.LENGTH_SHORT).show()
         } else if (pid == null && uid != null && uid !in friends) {
             Net.addFriend(uid, prefs.name)
-            android.widget.Toast.makeText(ctx, "Đã thêm ${p.name} vào bạn bè", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(ctx, uiStrings(prefs.language).addedFriend.replace("%s", p.name), android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -100,15 +100,16 @@ fun MatchScreen(
         AlertDialog(
             onDismissRequest = onHome,
             containerColor = Navy1,
-            title = { Text("Không vào được phòng", color = TextMain, fontWeight = FontWeight.Bold) },
+            title = { Text(ms.cannotJoin, color = TextMain, fontWeight = FontWeight.Bold) },
             text = { Text(err, color = TextMuted) },
-            confirmButton = { TextButton(onClick = onHome) { Text("Về sảnh", color = Gold, fontWeight = FontWeight.Bold) } },
+            confirmButton = { TextButton(onClick = onHome) { Text(ms.backToLobby, color = Gold, fontWeight = FontWeight.Bold) } },
         )
         return
     }
 
     if (vm.phase == Phase.END) {
         ResultScreen(
+            ms = ms,
             players = vm.players.toList(),
             winners = vm.winners,
             solo = vm.solo,
@@ -124,6 +125,7 @@ fun MatchScreen(
 
     if (vm.phase == Phase.LOBBY) {
         Lobby(
+            ms = ms,
             code = vm.roomCode,
             players = vm.players.toList(),
             friends = friends,
@@ -146,7 +148,7 @@ fun MatchScreen(
             .navigationBarsPadding(),
     ) {
         Column(Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
-            Header(vm, onClose = { askExit = true })
+            Header(ms, vm, onClose = { askExit = true })
             Spacer(Modifier.height(6.dp))
             val secs = ((vm.timeLeftMs + 999) / 1000).toInt()
             Stage(
@@ -176,6 +178,7 @@ fun MatchScreen(
             val q = vm.question
             if (q != null) {
                 QuestionCard(
+                    ms = ms,
                     no = vm.qNo,
                     total = vm.qTotal,
                     field = FIELD_NAMES[q.field] ?: q.field,
@@ -200,7 +203,7 @@ fun MatchScreen(
                         modifier = Modifier.fillMaxWidth().height(44.dp),
                         onClick = { vm.skip() },
                     ) {
-                        Text("Bỏ qua  »", color = TextMain, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Text(ms.skip, color = TextMain, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
                 }
                 Spacer(Modifier.height(10.dp))
@@ -214,10 +217,10 @@ fun MatchScreen(
             enter = fadeIn(),
             exit = fadeOut(),
         ) {
-            IntroOverlay(part = vm.part, left = vm.introLeft, solo = vm.solo)
+            IntroOverlay(ms, part = vm.part, left = vm.introLeft, solo = vm.solo)
         }
         if (vm.phase == Phase.SEARCH) {
-            SearchOverlay(found = vm.players.size - 1, secs = vm.searchSec, failed = vm.searchFailed, onCancel = { vm.stop(); onHome() })
+            SearchOverlay(ms, found = vm.players.size - 1, secs = vm.searchSec, failed = vm.searchFailed, onCancel = { vm.stop(); onHome() })
         }
     }
 
@@ -225,12 +228,12 @@ fun MatchScreen(
         AlertDialog(
             onDismissRequest = { askExit = false },
             containerColor = Navy1,
-            title = { Text("Rời trận?", color = TextMain, fontWeight = FontWeight.Bold) },
+            title = { Text(ms.leaveTitle, color = TextMain, fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    if ((vm.ranked || vm.room) && vm.phase != Phase.SEARCH) "Rời trận giữa chừng sẽ bị tính thua (xếp cuối)."
-                    else if (vm.phase == Phase.SEARCH) "Dừng tìm đối thủ?"
-                    else "Kết quả trận này sẽ không được lưu.",
+                    if ((vm.ranked || vm.room) && vm.phase != Phase.SEARCH) ms.leaveRanked
+                    else if (vm.phase == Phase.SEARCH) ms.leaveSearch
+                    else ms.leaveOther,
                     color = TextMuted,
                 )
             },
@@ -239,17 +242,17 @@ fun MatchScreen(
                     askExit = false
                     vm.stop()
                     onHome()
-                }) { Text("Rời trận", color = RedBad, fontWeight = FontWeight.Bold) }
+                }) { Text(ms.leave, color = RedBad, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { askExit = false }) { Text("Thi tiếp", color = Gold, fontWeight = FontWeight.Bold) }
+                TextButton(onClick = { askExit = false }) { Text(ms.continueMatch, color = Gold, fontWeight = FontWeight.Bold) }
             },
         )
     }
 }
 
 @Composable
-private fun Header(vm: MatchViewModel, onClose: () -> Unit) {
+private fun Header(ms: MatchStrings, vm: MatchViewModel, onClose: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(top = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -272,11 +275,11 @@ private fun Header(vm: MatchViewModel, onClose: () -> Unit) {
                     .background(GoldBrush)
                     .padding(horizontal = 8.dp, vertical = 3.dp),
             ) {
-                Text("PHẦN ${vm.part}", color = Ink, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                Text("${ms.partPrefix} ${vm.part}", color = Ink, fontSize = 11.sp, fontWeight = FontWeight.Black)
             }
             Spacer(Modifier.width(8.dp))
             Text(
-                PART_NAMES[vm.part].uppercase(),
+                (if (vm.part == 1) ms.part1 else if (vm.part == 2) ms.part2 else ms.part3).uppercase(),
                 color = Gold,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
@@ -294,6 +297,7 @@ private fun Header(vm: MatchViewModel, onClose: () -> Unit) {
 
 @Composable
 private fun QuestionCard(
+    ms: MatchStrings,
     no: Int,
     total: Int,
     field: String,
@@ -317,7 +321,7 @@ private fun QuestionCard(
                         .background(GoldBrush)
                         .padding(horizontal = 10.dp, vertical = 2.dp),
                 ) {
-                    Text("Câu $no / $total", color = Ink, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                    Text("${ms.questionLabel} $no / $total", color = Ink, fontSize = 12.sp, fontWeight = FontWeight.Black)
                 }
                 Spacer(Modifier.weight(1f))
                 Box(
@@ -457,7 +461,7 @@ private fun AnswerButton(
 }
 
 @Composable
-private fun IntroOverlay(part: Int, left: Int, solo: Boolean) {
+private fun IntroOverlay(ms: MatchStrings, part: Int, left: Int, solo: Boolean) {
     Box(
         Modifier
             .fillMaxSize()
@@ -481,10 +485,10 @@ private fun IntroOverlay(part: Int, left: Int, solo: Boolean) {
                 }
             }
             Spacer(Modifier.height(22.dp))
-            Text("PHẦN THI THỨ ${part}", color = TextMuted, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
+            Text(ms.introPart.replace("%d", "$part"), color = TextMuted, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
             Spacer(Modifier.height(6.dp))
             Text(
-                PART_NAMES[part].uppercase(),
+                (if (part == 1) ms.part1 else if (part == 2) ms.part2 else ms.part3).uppercase(),
                 color = Gold,
                 fontSize = 44.sp,
                 lineHeight = 48.sp,
@@ -493,7 +497,7 @@ private fun IntroOverlay(part: Int, left: Int, solo: Boolean) {
             )
             Spacer(Modifier.height(18.dp))
             Text(
-                rulesFor(part, solo),
+                rulesFor(ms, part, solo),
                 color = TextMain,
                 fontSize = 15.sp,
                 lineHeight = 22.sp,
@@ -510,28 +514,20 @@ private fun IntroOverlay(part: Int, left: Int, solo: Boolean) {
                 Text(if (left > 0) "$left" else "▶", color = Ink, fontSize = 36.sp, fontWeight = FontWeight.Black)
             }
             Spacer(Modifier.height(8.dp))
-            Text("Bắt đầu sau", color = TextMuted, fontSize = 13.sp)
+            Text(ms.startsIn, color = TextMuted, fontSize = 13.sp)
         }
     }
 }
 
-private fun rulesFor(part: Int, solo: Boolean): String = when (part) {
-    1 -> "2 phút trả lời liên tục.\nĐúng +10 điểm · được bỏ qua · sai không bị trừ."
-    2 -> if (solo) {
-        "10 câu, mỗi câu 15 giây.\nĐúng trong 5 giây +30 · trong 10 giây +20 · sau đó +10."
-    } else {
-        "10 câu, mỗi câu 15 giây.\nĐúng nhanh nhất +30 · nhì +20 · ba +10.\nSai không bị trừ."
-    }
-    else -> if (solo) {
-        "5 câu, mỗi câu 10 giây.\nĐúng +10 · sai −10.\nBấm ★ góc trên câu hỏi để đặt ngôi sao hy vọng cho câu sau của mình: đúng +20 · sai −20."
-    } else {
-        "Mỗi người lần lượt 1 câu, 5 vòng, 10 giây/câu.\nĐúng +10 · sai −10.\nBấm ★ góc trên câu hỏi để đặt ngôi sao hy vọng cho câu sau của mình: đúng +20 · sai −20.\nNgười khác được giành quyền khi người chính sai: đúng +10 · sai −10."
-    }
+private fun rulesFor(ms: MatchStrings, part: Int, solo: Boolean): String = when (part) {
+    1 -> ms.rule1
+    2 -> if (solo) ms.rule2Solo else ms.rule2Multi
+    else -> if (solo) ms.rule3Solo else ms.rule3Multi
 }
 
 
 @Composable
-private fun SearchOverlay(found: Int, secs: Int, failed: Boolean, onCancel: () -> Unit) {
+private fun SearchOverlay(ms: MatchStrings, found: Int, secs: Int, failed: Boolean, onCancel: () -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
@@ -543,14 +539,14 @@ private fun SearchOverlay(found: Int, secs: Int, failed: Boolean, onCancel: () -
             Text("⚡", color = Gold, fontSize = 44.sp)
             Spacer(Modifier.height(12.dp))
             Text(
-                if (failed) "CHƯA TÌM ĐƯỢC ĐỐI THỦ" else if (found >= 3) "ĐÃ ĐỦ NGƯỜI!" else "ĐANG TÌM ĐỐI THỦ…",
+                if (failed) ms.searchFailed else if (found >= 3) ms.searchFull else ms.searching,
                 color = Gold,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(8.dp))
-            Text("Thi đấu xếp hạng · 4 người", color = TextMuted, fontSize = 14.sp)
+            Text(ms.ranked4, color = TextMuted, fontSize = 14.sp)
             Spacer(Modifier.height(22.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 for (i in 0 until 4) {
@@ -568,10 +564,10 @@ private fun SearchOverlay(found: Int, secs: Int, failed: Boolean, onCancel: () -
                 }
             }
             Spacer(Modifier.height(18.dp))
-            Text("${found + 1}/4 người · ${secs}s", color = TextMain, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text("${found + 1}/4 ${ms.people} · ${secs}s", color = TextMain, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(26.dp))
             if (found < 3 || failed) {
-                TextButton(onClick = onCancel) { Text(if (failed) "Về sảnh" else "Hủy tìm", color = TextMuted, fontWeight = FontWeight.Bold, fontSize = 15.sp) }
+                TextButton(onClick = onCancel) { Text(if (failed) ms.backToLobby else ms.searchCancel, color = TextMuted, fontWeight = FontWeight.Bold, fontSize = 15.sp) }
             }
         }
     }
@@ -580,6 +576,7 @@ private fun SearchOverlay(found: Int, secs: Int, failed: Boolean, onCancel: () -
 
 @Composable
 private fun Lobby(
+    ms: MatchStrings,
     code: String,
     players: List<vn.dautruongtrithuc.game.PlayerState>,
     friends: Set<String>,
@@ -607,23 +604,23 @@ private fun Lobby(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("PHÒNG CHỜ", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                Text(if (isHost) "Phòng của bạn" else "Phòng của ${players.getOrNull(1)?.name ?: "bạn bè"}", color = Gold, fontSize = 22.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                Text(ms.lobbyTitle, color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                Text(if (isHost) ms.lobbyYourRoom else ms.lobbyRoomOf + (players.getOrNull(1)?.name ?: ""), color = Gold, fontSize = 22.sp, fontWeight = FontWeight.Black, maxLines = 1)
             }
             TextButton(onClick = {
                 val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                     type = "text/plain"
                     putExtra(
                         android.content.Intent.EXTRA_TEXT,
-                        if (netRoom != null) "Vào Đấu Trường Trí Thức thi với mình nhé! Bấm vào đây để vào phòng: ${vn.dautruongtrithuc.inviteLink(netRoom)}"
-                        else "Tải Đấu Trường Trí Thức để thi đấu kiến thức cùng mình nhé!",
+                        if (netRoom != null) ms.inviteMessageRoom + vn.dautruongtrithuc.inviteLink(netRoom)
+                        else ms.inviteMessageApp,
                     )
                 }
-                ctx.startActivity(android.content.Intent.createChooser(send, "Mời bạn vào phòng"))
-            }) { Text("Gửi link ↗", color = Gold, fontWeight = FontWeight.Bold, fontSize = 15.sp) }
+                ctx.startActivity(android.content.Intent.createChooser(send, ms.inviteChooser))
+            }) { Text(ms.sendLink, color = Gold, fontWeight = FontWeight.Bold, fontSize = 15.sp) }
         }
         BlueButton(modifier = Modifier.fillMaxWidth().height(46.dp), onClick = { inviting = true }) {
-            Text("＋ Mời bạn bè trong app", color = TextMain, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Text(ms.inviteInApp, color = TextMain, fontWeight = FontWeight.Bold, fontSize = 15.sp)
         }
         for (i in 0 until 4) {
             val p = players.getOrNull(i)
@@ -643,7 +640,7 @@ private fun Lobby(
                         contentAlignment = Alignment.Center,
                     ) { Text("?", color = TextMuted, fontSize = 20.sp, fontWeight = FontWeight.Bold) }
                     Spacer(Modifier.width(22.dp))
-                    Text("Đang chờ người chơi…", color = TextMuted, fontSize = 15.sp)
+                    Text(ms.waitingPlayers, color = TextMuted, fontSize = 15.sp)
                 } else {
                     Spacer(Modifier.width(4.dp))
                     Avatar(
@@ -658,7 +655,7 @@ private fun Lobby(
                     Spacer(Modifier.width(26.dp))
                     Column(Modifier.weight(1f)) {
                         OneLine(p.name, size = 16, weight = FontWeight.Bold)
-                        Text(if (p.id == 0) "Chủ phòng" else p.province.ifBlank { "Sẵn sàng" }, color = TextMuted, fontSize = 12.sp)
+                        Text(if (p.id == 0) ms.host else p.province.ifBlank { ms.ready }, color = TextMuted, fontSize = 12.sp)
                     }
                     Text("✓", color = GreenOk, fontSize = 20.sp, fontWeight = FontWeight.Black)
                 }
@@ -667,9 +664,9 @@ private fun Lobby(
         Spacer(Modifier.weight(1f))
         Text(
             when {
-                !isHost -> "Đang chờ chủ phòng bắt đầu…"
-                players.size < 2 -> "Cần ít nhất 2 người để bắt đầu"
-                else -> "Trận tính điểm xếp hạng"
+                !isHost -> ms.waitingHost
+                players.size < 2 -> ms.need2
+                else -> ms.rankedMatch
             },
             color = TextMuted,
             fontSize = 13.sp,
@@ -678,14 +675,14 @@ private fun Lobby(
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             BlueButton(modifier = Modifier.weight(1f).height(54.dp), onClick = { askLeave = true }) {
-                Text("Rời phòng", color = RedBad, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                Text(ms.leaveRoom, color = RedBad, fontWeight = FontWeight.Black, fontSize = 16.sp)
             }
             if (isHost) GoldButton(
                 modifier = Modifier.weight(1f).height(54.dp),
                 onClick = { if (players.size >= 2) onStart() },
             ) {
                 Text(
-                    "Bắt đầu",
+                    ms.startMatch,
                     color = if (players.size >= 2) Ink else Ink.copy(alpha = 0.4f),
                     fontWeight = FontWeight.Black,
                     fontSize = 16.sp,
@@ -700,10 +697,10 @@ private fun Lobby(
         AlertDialog(
             onDismissRequest = { inviting = false },
             containerColor = Navy1,
-            title = { Text("Mời bạn bè", color = Gold, fontWeight = FontWeight.Black) },
+            title = { Text(ms.inviteTitle, color = Gold, fontWeight = FontWeight.Black) },
             text = {
                 if (list.isEmpty() && real.isEmpty()) {
-                    Text("Chưa có bạn bè. Bấm dấu + trên ảnh người chơi để kết bạn.", color = TextMuted)
+                    Text(ms.noFriendsLobby, color = TextMuted)
                 } else Column(
                     Modifier.verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -718,11 +715,11 @@ private fun Lobby(
                                 OneLine(u.name, size = 15, weight = FontWeight.Bold)
                                 Text(
                                     when {
-                                        inRoom -> "Đã vào phòng"
-                                        !u.online -> "Ngoại tuyến"
-                                        u.inMatch -> "Đang trong trận"
-                                        u.uid in invited -> "Đã mời"
-                                        else -> "Đang trực tuyến"
+                                        inRoom -> ms.inRoom
+                                        !u.online -> ms.offline
+                                        u.inMatch -> ms.inMatch
+                                        u.uid in invited -> ms.invited
+                                        else -> ms.onlineNow
                                     },
                                     color = if (free) GreenOk else TextMuted,
                                     fontSize = 12.sp,
@@ -732,7 +729,7 @@ private fun Lobby(
                                 TextButton(onClick = {
                                     Net.invite(u.uid, prefs.name, netRoom)
                                     invited.add(u.uid)
-                                }) { Text("Mời", color = Gold, fontWeight = FontWeight.Black) }
+                                }) { Text(ms.invite, color = Gold, fontWeight = FontWeight.Black) }
                             }
                         }
                     }
@@ -747,11 +744,11 @@ private fun Lobby(
                                 OneLine(pp.name, size = 15, weight = FontWeight.Bold)
                                 Text(
                                     when {
-                                        inRoom -> "Đã vào phòng"
-                                        !on -> "Ngoại tuyến"
-                                        busy -> "Đang trong trận"
-                                        pp.id in invited -> "Đang vào…"
-                                        else -> "Đang trực tuyến"
+                                        inRoom -> ms.inRoom
+                                        !on -> ms.offline
+                                        busy -> ms.inMatch
+                                        pp.id in invited -> ms.joining
+                                        else -> ms.onlineNow
                                     },
                                     color = if (on && !busy) GreenOk else TextMuted,
                                     fontSize = 12.sp,
@@ -760,15 +757,15 @@ private fun Lobby(
                             if (on && !busy && !inRoom && pp.id !in invited) {
                                 TextButton(onClick = {
                                     if (players.size >= 4) {
-                                        android.widget.Toast.makeText(ctx, "Phòng đã đủ 4 người", android.widget.Toast.LENGTH_SHORT).show()
+                                        android.widget.Toast.makeText(ctx, ms.roomFullToast, android.widget.Toast.LENGTH_SHORT).show()
                                     } else if (onInvite(pp.id)) invited.add(pp.id)
-                                }) { Text("Mời", color = Gold, fontWeight = FontWeight.Black) }
+                                }) { Text(ms.invite, color = Gold, fontWeight = FontWeight.Black) }
                             }
                         }
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { inviting = false }) { Text("Xong", color = Gold, fontWeight = FontWeight.Bold) } },
+            confirmButton = { TextButton(onClick = { inviting = false }) { Text(ms.done, color = Gold, fontWeight = FontWeight.Bold) } },
         )
     }
 
@@ -776,12 +773,12 @@ private fun Lobby(
         AlertDialog(
             onDismissRequest = { askLeave = false },
             containerColor = Navy1,
-            title = { Text("Rời phòng?", color = TextMain, fontWeight = FontWeight.Bold) },
-            text = { Text("Bạn sẽ rời khỏi phòng chờ này.", color = TextMuted) },
+            title = { Text(ms.leaveRoomTitle, color = TextMain, fontWeight = FontWeight.Bold) },
+            text = { Text(ms.leaveRoomText, color = TextMuted) },
             confirmButton = {
-                TextButton(onClick = { askLeave = false; onLeave() }) { Text("Rời phòng", color = RedBad, fontWeight = FontWeight.Bold) }
+                TextButton(onClick = { askLeave = false; onLeave() }) { Text(ms.leaveRoom, color = RedBad, fontWeight = FontWeight.Bold) }
             },
-            dismissButton = { TextButton(onClick = { askLeave = false }) { Text("Ở lại", color = Gold, fontWeight = FontWeight.Bold) } },
+            dismissButton = { TextButton(onClick = { askLeave = false }) { Text(ms.stay, color = Gold, fontWeight = FontWeight.Bold) } },
         )
     }
 }

@@ -76,10 +76,11 @@ fun HomeScreen(prefs: Prefs, fx: SoundFx, onStart: (MatchConfig) -> Unit) {
     var nameVersion by remember { mutableIntStateOf(0) }
     var lang by remember { mutableStateOf(prefs.language.takeIf { code -> APP_LANGUAGES.any { it.code == code } } ?: "en") }
     val s = uiStrings(lang)
-    // Đổi ngôn ngữ ở màn đăng nhập hoặc tab Tôi thì nạp lại ngân hàng câu hỏi cho đúng ngôn ngữ.
+    // Đổi ngôn ngữ ở màn đăng nhập hoặc tab Tôi thì nạp lại ngân hàng câu hỏi và giọng đọc cho đúng ngôn ngữ.
     val homeCtx = LocalContext.current
     LaunchedEffect(lang) {
         if (QuestionBank.loadedLang != lang) QuestionBank.load(homeCtx, reload = true)
+        fx.applyVoiceLanguage()
     }
 
     if (settings) {

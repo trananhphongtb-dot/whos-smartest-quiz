@@ -39,16 +39,15 @@ jobs:
         with:
           name: WhosSmartest-debug
           path: app/build/outputs/apk/debug/*.apk
-      # TAM TAT AAB - chi build APK de test, khoi phuc khi user chot on dinh
       - name: Build release AAB (Google Play)
-        if: false
+        if: env.KEYSTORE_FILE != ''
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: gradle bundleRelease --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
-        if: false
+        if: env.KEYSTORE_FILE != ''
         with:
           name: WhosSmartest-release-aab
           path: app/build/outputs/bundle/release/*.aab

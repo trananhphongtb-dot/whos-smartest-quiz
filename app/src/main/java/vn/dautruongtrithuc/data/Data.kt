@@ -109,11 +109,24 @@ object QuestionBank {
     var all: List<Question> = emptyList()
         private set
 
+    /** Ngôn ngữ của bộ câu hỏi đang nạp (null = chưa nạp). */
+    var loadedLang: String? = null
+        private set
+
     val fieldCount: Int get() = all.map { it.field }.distinct().size
 
-    fun load(context: Context) {
-        if (all.isNotEmpty()) return
-        val text = context.assets.open("cau_hoi.json").bufferedReader(Charsets.UTF_8).use { it.readText() }
+    /** File ngân hàng câu hỏi theo ngôn ngữ; ngôn ngữ chưa có bộ riêng thì dùng tiếng Anh. */
+    fun fileFor(lang: String): String = when (lang) {
+        "vi" -> "cau_hoi_vi.json"
+        "zh" -> "cau_hoi_zh.json"
+        "hi" -> "cau_hoi_hi.json"
+        else -> "cau_hoi.json"
+    }
+
+    fun load(context: Context, reload: Boolean = false) {
+        if (!reload && all.isNotEmpty()) return
+        val lang = try { Prefs(context).language } catch (_: Exception) { "en" }
+        val text = context.assets.open(fileFor(lang)).bufferedReader(Charsets.UTF_8).use { it.readText() }
         val arr = JSONObject(text).getJSONArray("cau_hoi")
         val list = ArrayList<Question>(arr.length())
         for (i in 0 until arr.length()) {
@@ -133,6 +146,7 @@ object QuestionBank {
             )
         }
         all = list
+        loadedLang = lang
     }
 
     /**

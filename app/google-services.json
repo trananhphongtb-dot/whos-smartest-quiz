@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "657179156515",
+    "firebase_url": "https://whos-smartest-quiz-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "whos-smartest-quiz",
+    "storage_bucket": "whos-smartest-quiz.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:657179156515:android:183b026d780dcbaecb9196",
+        "android_client_info": {
+          "package_name": "com.whosmartest.quiz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "657179156515-4q53fnmqo6rc7koradfjsndqhb28s4rm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.whosmartest.quiz",
+            "certificate_hash": "67e83146d1eb621621ce2cecb2fa527733aec932"
+          }
+        },
+        {
+          "client_id": "657179156515-12leq6rql5507ojohsg19pvbohg8b3pe.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqzkTbnSs4pzt7vIpe1gzD0jY-xh53hGE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "657179156515-12leq6rql5507ojohsg19pvbohg8b3pe.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

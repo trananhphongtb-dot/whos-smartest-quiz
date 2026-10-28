@@ -568,7 +568,7 @@ private fun MeTab(prefs: Prefs, s: UiStrings, lang: String, onLangChange: (Strin
     }
 
     if (picking) {
-        AvatarPicker(prefs, onDismiss = { picking = false }) {
+        AvatarPicker(prefs, s, onDismiss = { picking = false }) {
             picking = false
             onNameChanged()
         }
@@ -594,7 +594,7 @@ private fun MeTab(prefs: Prefs, s: UiStrings, lang: String, onLangChange: (Strin
 }
 
 @Composable
-private fun AvatarPicker(prefs: Prefs, onDismiss: () -> Unit, onDone: () -> Unit) {
+private fun AvatarPicker(prefs: Prefs, s: UiStrings, onDismiss: () -> Unit, onDone: () -> Unit) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }

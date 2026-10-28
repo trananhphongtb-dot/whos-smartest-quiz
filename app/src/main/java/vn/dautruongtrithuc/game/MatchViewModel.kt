@@ -25,6 +25,8 @@ import vn.dautruongtrithuc.data.Personas
 import vn.dautruongtrithuc.data.Prefs
 import vn.dautruongtrithuc.data.Question
 import vn.dautruongtrithuc.data.QuestionBank
+import vn.dautruongtrithuc.ui.matchStrings
+import vn.dautruongtrithuc.ui.partNames
 import kotlin.random.Random
 
 /** bots = 0 là luyện tập một mình; level 0 dễ, 1 vừa, 2 khó; ranked = thi trực tuyến xếp hạng. */
@@ -431,7 +433,7 @@ class MatchViewModel : ViewModel() {
         timeLeftMs = 0L
         fx.play("chime")
         delay(700)
-        fx.say("Chào mừng đến với phần thi ${PART_NAMES[n]}")
+        fx.say(matchStrings(prefs.language).voiceWelcome.replace("%s", partNames(prefs.language).getOrElse(n) { "" }))
         introLeft = 6
         while (introLeft > 0) {
             delay(1000)
@@ -789,14 +791,14 @@ class MatchViewModel : ViewModel() {
         if (solo) {
             if (me.score > prefs.bestSolo) prefs.bestSolo = me.score
             fx.play("win")
-            fx.say("Xin chúc mừng! Bạn đã hoàn thành phần thi với ${me.score} điểm")
+            fx.say(matchStrings(prefs.language).voiceFinishSolo.replace("%d", "${me.score}"))
         } else if (0 in winners) {
             prefs.wins = prefs.wins + 1
             fx.play("win")
-            fx.say("Xin chúc mừng ${me.name}, bạn đã chiến thắng!")
+            fx.say(matchStrings(prefs.language).voiceWinName.replace("%s", me.name))
         } else {
             fx.play("lose")
-            fx.say("Chúc bạn may mắn lần sau!")
+            fx.say(matchStrings(prefs.language).voiceGoodLuck)
         }
         phase = Phase.END
         Net.setInMatch(false)
@@ -1035,7 +1037,7 @@ class MatchViewModel : ViewModel() {
         val newPhase = runCatching { Phase.valueOf(s.child("phase").getValue(String::class.java) ?: "INTRO") }.getOrDefault(Phase.INTRO)
         if (newPart != part && newPhase == Phase.INTRO) {
             fx.play("chime")
-            fx.say("Chào mừng đến với phần thi ${PART_NAMES.getOrElse(newPart) { "" }}")
+            fx.say(matchStrings(prefs.language).voiceWelcome.replace("%s", partNames(prefs.language).getOrElse(newPart) { "" }))
         }
         part = newPart
         introLeft = s.child("intro").getValue(Long::class.java)?.toInt() ?: 0
@@ -1121,7 +1123,7 @@ class MatchViewModel : ViewModel() {
                 Net.setInMatch(false)
                 Net.pushProfile()
             }
-            if (0 in winners) { fx.play("win"); fx.say("Xin chúc mừng, bạn đã chiến thắng!") } else { fx.play("lose"); fx.say("Chúc bạn may mắn lần sau!") }
+            if (0 in winners) { fx.play("win"); fx.say(matchStrings(prefs.language).voiceWin) } else { fx.play("lose"); fx.say(matchStrings(prefs.language).voiceGoodLuck) }
         }
         phase = if (newPhase == Phase.REVEAL) Phase.PLAY else newPhase
     }

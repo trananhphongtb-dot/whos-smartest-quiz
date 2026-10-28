@@ -141,22 +141,24 @@ fun Avatar(
             )
         }
         if (friend != null) {
-            val badge = (size.value * 0.36f).coerceIn(16f, 24f).dp
+            // Nút thêm bạn: vòng tròn to, rõ ở góc trên-trái avatar.
+            // Chưa là bạn: dấu + to, màu vàng. Đã là bạn: dấu ✓, màu xanh.
+            val badge = (size.value * 0.55f).coerceIn(20f, 28f).dp
             Box(
                 Modifier
                     .align(Alignment.TopStart)
-                    .offset(x = -badge * 0.25f, y = -badge * 0.25f)
+                    .offset(x = -badge * 0.15f, y = -badge * 0.15f)
                     .size(badge)
                     .clip(CircleShape)
                     .background(if (friend) GreenOk else Gold)
-                    .border(1.5.dp, Navy0, CircleShape)
+                    .border(2.dp, Navy0, CircleShape)
                     .clickable(enabled = !friend && onAddFriend != null) { onAddFriend?.invoke() },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     if (friend) "✓" else "+",
                     color = if (friend) Color.White else Ink,
-                    fontSize = (badge.value * 0.62f).sp,
+                    fontSize = (badge.value * 0.78f).sp,
                     fontWeight = FontWeight.Black,
                 )
             }
